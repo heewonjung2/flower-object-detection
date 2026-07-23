@@ -1,0 +1,24 @@
+# Model Configuration
+model:
+  name: "yolo11n.pt"
+
+# Dataset Configuration
+dataset:
+  data_yaml: "data/data.yaml"
+  num_classes: 15
+
+# Training Configuration
+training:
+  epochs: 30
+  image_size: 640
+  batch_size: 16
+  device: 0
+
+# Prediction Configuration
+prediction:
+  confidence_threshold: 0.25
+
+# Output Configuration
+output:
+  project_dir: "results"
+  experiment_name: "flower_detection"
