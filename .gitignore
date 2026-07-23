@@ -13,3 +13,6 @@ runs/
 
 # Model weights
 *.pt
+
+# Test input images
+data/test_images/
