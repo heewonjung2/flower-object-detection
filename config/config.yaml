@@ -16,7 +16,7 @@ training:
 
 # Prediction Configuration
 prediction:
-  confidence_threshold: 0.25
+  confidence_threshold: 0.5
 
 # Output Configuration
 output:

@@ -1,312 +1,149 @@
-# 🌸 Flower Object Detection using YOLO
+# Flower Object Detection
 
-A computer vision project that detects and classifies multiple flower species using YOLO.
+YOLO 기반 꽃 객체 탐지 모델을 학습하고, OpenCV를 활용하여 실제 이미지에서 꽃 종류를 탐지하고 결과를 시각화하는 프로젝트입니다.
 
-This project trains a YOLO-based object detection model on a flower dataset containing 15 flower classes and performs object detection on unseen flower images.
+## Dataset
 
-The project was designed with a structured training and inference pipeline, configurable parameters, and unit tests for maintainability and reproducibility.
+Roboflow Universe의 Flower Object Detection Dataset을 활용했습니다.
 
----
+- Task: Object Detection
+- Classes: 15
+- Classes:
+  - carnation
+  - chrysanthemum
+  - daffodil
+  - daisy
+  - hydrangea
+  - iris
+  - jasmine
+  - lotus
+  - orchid
+  - peony
+  - primrose
+  - rose
+  - sunflower
+  - tulip
+  - zinna
 
-# 🎯 Project Objectives
+## Model Training
 
-- Build a flower object detection model using YOLO
-- Detect and classify multiple flower species in images
-- Train the model using GPU acceleration in Google Colab
-- Evaluate object detection performance using Precision, Recall, and mAP
-- Separate training parameters using a configuration file
-- Build a reusable training and inference pipeline
-- Verify project configurations using Unit Tests
+Ultralytics YOLO11n 모델을 사용하여 Google Colab의 Tesla T4 GPU 환경에서 30 Epoch 학습을 진행했습니다.
 
----
+### Validation Results
 
-# 🌷 Flower Classes
+| Metric | Result |
+| --- | ---: |
+| Precision | 0.777 |
+| Recall | 0.765 |
+| mAP50 | 0.809 |
+| mAP50-95 | 0.561 |
 
-The dataset contains 15 flower classes:
+전체 클래스 기준 mAP50은 0.809를 기록했습니다.
 
-- Carnation
-- Chrysanthemum
-- Daffodil
-- Daisy
-- Hydrangea
-- Iris
-- Jasmine
-- Lotus
-- Orchid
-- Peony
-- Primrose
-- Rose
-- Sunflower
-- Tulip
-- Zinna
+클래스별 성능을 확인한 결과 iris, hydrangea, lotus 등의 클래스는 높은 탐지 성능을 보였지만, peony, tulip 등 일부 클래스에서는 상대적으로 낮은 성능을 확인했습니다.
 
----
+## OpenCV Inference
 
-# 📂 Project Structure
+학습된 YOLO 모델의 `best.pt`를 로컬 환경에서 불러와 여러 테스트 이미지에 대해 객체 탐지를 수행했습니다.
+
+OpenCV를 활용하여 다음 정보를 이미지 위에 시각화했습니다.
+
+- Bounding Box
+- 예측 클래스
+- Confidence Score
+
+`data/test_images/` 폴더의 여러 이미지를 일괄 처리하고, 탐지 결과를 `results/opencv_predictions/`에 자동 저장하도록 구현했습니다.
+
+## Test Results
+
+다양한 환경의 이미지를 사용하여 모델의 실제 탐지 성능을 확인했습니다.
+
+- 단일 꽃 이미지에서는 iris를 높은 confidence로 정확하게 탐지했습니다.
+- 복잡한 꽃다발 이미지에서는 일부 꽃이 탐지되지 않는 미탐(False Negative)이 발생했습니다.
+- 여러 종류의 꽃이 섞인 꽃다발에서는 서로 다른 꽃을 동일한 클래스로 분류하는 오탐(False Positive)이 발생했습니다.
+- 연꽃 이미지에서는 실제 연꽃을 높은 confidence로 탐지했지만, 사람 얼굴을 lotus로 잘못 탐지하는 사례가 확인되었습니다.
+- 학습 데이터에 포함되지 않은 lily 이미지에서는 chrysanthemum으로 잘못 분류하는 OOD(Out-of-Distribution) 문제가 확인되었습니다.
+
+## Confidence Threshold Experiment
+
+초기 confidence threshold를 0.25로 설정하여 테스트한 결과, 낮은 confidence의 오탐이 다수 발생했습니다.
+
+이를 개선하기 위해 threshold를 0.5로 변경하여 동일한 이미지에 대해 다시 추론했습니다.
+
+### Threshold 0.25
+
+- 다양한 객체를 탐지하지만 낮은 confidence의 오탐이 발생
+- 꽃이 아닌 영역 또는 다른 종류의 꽃을 잘못 탐지하는 사례 확인
+
+### Threshold 0.5
+
+- 낮은 confidence의 오탐 감소
+- 높은 confidence를 가진 주요 객체 중심으로 결과가 정리됨
+- 일부 이미지에서는 탐지 결과가 사라져 미탐 가능성이 증가함
+- 사람 얼굴을 lotus로 탐지하는 고신뢰도 오탐은 여전히 존재
+
+따라서 본 프로젝트에서는 오탐 감소를 위해 최종 confidence threshold를 **0.5**로 설정했습니다.
+
+## Limitations
+
+실험을 통해 다음과 같은 한계점을 확인했습니다.
+
+1. 학습 데이터와 실제 꽃다발 이미지 사이의 도메인 차이
+2. 여러 종류의 꽃이 겹쳐 있는 환경에서 클래스 간 혼동 발생
+3. 복잡한 배경과 작은 객체에 대한 탐지 성능 저하
+4. 사람 등 비꽃 객체를 꽃으로 탐지하는 False Positive 발생
+5. 학습하지 않은 꽃 종류를 기존 15개 클래스 중 하나로 잘못 분류하는 OOD 문제
+
+## Future Improvements
+
+향후 다음과 같은 방법으로 모델 성능을 개선할 수 있습니다.
+
+- 실제 꽃다발 이미지 중심의 학습 데이터 추가
+- 사람, 실내 배경 등 다양한 Negative Sample 추가
+- 클래스별 데이터 수 불균형 개선
+- 데이터 증강을 통한 다양한 촬영 환경 학습
+- Confidence Threshold 및 모델 파라미터 최적화
+- OOD Detection을 적용하여 미학습 클래스에 대한 Unknown 처리
+- 실제 서비스 환경에 적합한 꽃 객체 탐지 및 생성 이미지 검증 모델로 확장
+
+## Project Structure
 
 ```text
 flower-object-detection/
-│
 ├── config/
 │   └── config.yaml
-│
 ├── data/
-│   └── data.yaml
-│
+│   └── test_images/
 ├── results/
 │   ├── flower_detection/
-│   └── predictions/
-│
+│   │   └── weights/
+│   │       └── best.pt
+│   └── opencv_predictions/
 ├── src/
 │   ├── train.py
 │   └── predict.py
-│
 ├── tests/
-│   └── test_config.py
-│
 ├── .gitignore
 ├── README.md
 └── requirements.txt
 ```
 
-## Directory and File Description
+## Run
 
-### `config/`
+### Install Dependencies
 
-Stores project configuration files.
-
-- `config.yaml`
-  - YOLO model configuration
-  - Dataset path and number of classes
-  - Training parameters such as epochs, image size, and batch size
-  - Prediction confidence threshold
-  - Output directory settings
-
-Using a separate configuration file allows training parameters to be changed without modifying the Python source code.
-
-### `data/`
-
-Stores dataset configuration and local test images.
-
-The full training dataset is not uploaded to GitHub due to its size.
-
-### `results/`
-
-Stores model training and prediction outputs.
-
-Examples include:
-
-- Training performance graphs
-- Confusion Matrix
-- Validation results
-- Object detection result images
-
-Large model weight files such as `.pt` files are excluded from Git tracking.
-
-### `src/`
-
-Contains the main Python source code.
-
-- `train.py`
-  - Loads training parameters from `config.yaml`
-  - Loads the pretrained YOLO model
-  - Trains the flower object detection model
-
-- `predict.py`
-  - Loads the trained YOLO model
-  - Performs object detection on new flower images
-  - Saves prediction results
-
-### `tests/`
-
-Contains Unit Tests using pytest.
-
-- `test_config.py`
-  - Verifies that `config.yaml` exists
-  - Validates model configuration
-  - Validates dataset configuration
-  - Checks training parameter values
-  - Validates prediction confidence threshold
-
----
-
-# 🛠 Tech Stack
-
-- Python
-- Ultralytics YOLO
-- PyTorch
-- OpenCV
-- NumPy
-- PyYAML
-- pytest
-- Google Colab GPU
-- Roboflow
-
----
-
-# 📊 Dataset
-
-A flower Object Detection dataset from Roboflow Universe was used.
-
-- Number of classes: 15
-- Annotation format: YOLO
-- License: CC BY 4.0
-
-The dataset contains Bounding Box annotations for multiple flower species.
-
-The dataset is divided into:
-
-```text
-train/
-valid/
-test/
+```bash
+py -m pip install -r requirements.txt
 ```
 
-The training dataset is downloaded directly in the Google Colab environment and is not included in this repository.
+### Run Prediction
 
----
-
-# ⚙️ Configuration
-
-Training and prediction parameters are managed through:
-
-```text
-config/config.yaml
+```bash
+py src/predict.py
 ```
 
-Example:
-
-```yaml
-model:
-  name: "yolo11n.pt"
-
-dataset:
-  data_yaml: "data/data.yaml"
-  num_classes: 15
-
-training:
-  epochs: 30
-  image_size: 640
-  batch_size: 16
-  device: 0
-
-prediction:
-  confidence_threshold: 0.25
-
-output:
-  project_dir: "results"
-  experiment_name: "flower_detection"
-```
-
-This structure allows model settings to be modified without changing the training or prediction source code.
-
----
-
-# 🚀 Training Pipeline
-
-The model training pipeline follows these steps:
-
-```text
-Flower Dataset
-      ↓
-YOLO Annotation
-      ↓
-Dataset Configuration (data.yaml)
-      ↓
-Project Configuration (config.yaml)
-      ↓
-Pretrained YOLO Model
-      ↓
-GPU Training
-      ↓
-Model Evaluation
-      ↓
-Best Model (best.pt)
-      ↓
-Flower Object Detection
-```
-
-The model is trained using a GPU environment in Google Colab.
-
----
-
-# 🧪 Unit Test
-
-Unit Tests are implemented using pytest.
-
-Run:
+### Run Tests
 
 ```bash
 py -m pytest
 ```
-
-Current test result:
-
-```text
-5 passed
-```
-
-The tests verify the configuration required for the training and inference pipeline.
-
----
-
-# 📈 Model Evaluation
-
-The trained model will be evaluated using:
-
-- Precision
-- Recall
-- mAP@50
-- mAP@50-95
-- Confusion Matrix
-
-Training and evaluation results will be added after model training is completed.
-
----
-
-# 🖼 Detection Results
-
-Object detection results will be added after inference using the trained model.
-
-The final results will include:
-
-- Original flower image
-- YOLO Bounding Box detection result
-- Predicted flower class
-- Confidence score
-
----
-
-# 💡 Mentor Feedback Applied
-
-The following improvements were applied based on previous mentor feedback:
-
-- Organized the project using a clear directory structure
-- Added detailed descriptions of each directory and file to the README
-- Separated model and training parameters using `config.yaml`
-- Designed the project so that parameters can be modified without directly editing the training source code
-- Used Google Colab GPU instead of local CPU for model training
-- Maintained a Git Branch-based development workflow
-- Added Unit Tests to verify project configuration
-
----
-
-# 🔗 Connection to Previous Project
-
-This project explores flower image analysis using Object Detection.
-
-While the previous graduation project focuses on AI-based bouquet image generation, this project approaches the flower domain from an Object Detection perspective.
-
-In the future, the object detection model could potentially be used to analyze generated bouquet images and verify whether specific flower types are present in the generated result.
-
----
-
-# 🔮 Future Improvements
-
-- Analyze Precision, Recall, and mAP for each flower class
-- Analyze false positive and false negative detection cases
-- Improve detection performance through additional training and hyperparameter tuning
-- Compare different YOLO model sizes
-- Test the model on real-world bouquet images
-- Explore detection of multiple flower species within a single bouquet
-- Integrate flower detection with an AI-based bouquet generation pipeline
